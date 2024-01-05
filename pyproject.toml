@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tgsplitexpenses"
+version = "1.0.0"
+authors = [
+    {name = "Cristian Baldi", email = "cristian@baldi.me"},
+]
+description = "tgsplitexpenses"
+requires-python = ">=3.9"
+keywords = []
+license = {text = "GPL-3.0-or-later"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "gspread",
+    "python-telegram-bot",
+    "ruamel.yaml",
+    "pydantic",
+]
+
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["tgsplitexpenses*"]

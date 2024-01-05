@@ -1,0 +1,65 @@
+telegram_bot:
+  token: "BOT_TOKEN"
+  allowed_chats: [
+    "1234567890",
+    "-987654321",
+  ]
+
+gsheet:
+  service_account_file: "./service_account.json"
+  file_id: "FILE_ID" # https://docs.google.com/spreadsheets/d/FILE_ID/edit#gid=0
+  transactions_worksheet_name: "Expenses"
+  summary_worksheet_name: "Summary"
+  summary_worksheet_cell_user_in_debt: "B4"
+  summary_worksheet_cell_amount_to_repay: "B5"
+
+expenses:
+  users:
+    - id: user1
+      name: "User1"
+      emoji: "🧶"
+    - id: user2
+      name: "User2"
+      emoji: "🤖"
+  categories:
+    - name: "Home"
+      emoji: "🏠"
+      keywords: ["rent", "furniture"]
+    - name: "Groceries"
+      emoji: "🛒"
+      keywords: ["supermarket", "fruit", "vegetables", "grocery store"]
+    - name: "Bills"
+      emoji: "💡"
+      keywords: ["internet", "electricity", "gas"]
+    - name: "Restaurants and Cafes"
+      emoji: "🍴"
+      keywords: ["dining", "cafe", "restaurant", "pizzeria", "pizza"]
+    - name: "Car"
+      keywords: ["gas"]
+      emoji: "🚙"
+    - name: "Vacation"
+      keywords: []
+      emoji: "🚙"
+    - name: "Other"
+      emoji: "❓"
+      keywords: []
+    - name: "Balance"
+      emoji: "🅾️"
+      keywords: ["balance"]
+  split_types:
+    - name: "50 / 50"
+      split:
+        user2: 50
+        user1: 50
+    - name: "Split 60/40"
+      split:
+        user2: 60
+        user1: 40
+    - name: "User2 100 (give User2)"
+      split:
+        user2: 100
+        user1: 0
+    - name: "User1 100 (give User1)"
+      split:
+        user2: 0
+        user1: 100
