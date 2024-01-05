@@ -13,7 +13,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 if __name__ == "__main__":
     config_file = Path(os.environ.get("TG_SPLITEXPENSE_CONFIG_FILE", "./config.yaml"))
-    app_config = load_config(Path("./config.yaml"))
+    app_config = load_config(config_file)
     gsheet = GSheet(app_config)
     app = tg_make_app(app_config, gsheet)
     logging.info("Running...")
