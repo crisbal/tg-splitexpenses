@@ -14,6 +14,7 @@ class GSheet:
         self.transactions_worksheet = ss.worksheet(app_config.gsheet.transactions_worksheet_name)
         self.summary_worksheet = ss.worksheet(app_config.gsheet.summary_worksheet_name)
 
+    @staticmethod
     def _create_row_from_transaction(transaction: Transaction, app_config: AppConfig) -> list:
         share_by_user = {}
 
@@ -21,7 +22,10 @@ class GSheet:
             share_by_user[user] = transaction.total * percentage/100
 
         row = [
-            transaction.date.isoformat(),
+            transaction.date.year,
+            transaction.date.month,
+            transaction.date.day,
+            f"{transaction.date.hour}:{transaction.date.minute}",
             transaction.title,
             transaction.category.name,
             transaction.total,
