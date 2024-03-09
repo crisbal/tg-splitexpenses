@@ -4,6 +4,7 @@ from ruamel.yaml import YAML
 
 from . import models
 
+
 class AppConfig(BaseModel):
     class _TelegramBotConfig(BaseModel):
         token: str
@@ -26,7 +27,8 @@ class AppConfig(BaseModel):
     expenses: _ExpensesConfig
     gsheet: _GSheetConfig
 
+
 def load_config(config_file: Path) -> AppConfig:
-    config = YAML(typ='safe').load(config_file)
+    config = YAML(typ="safe").load(config_file)
     config = AppConfig(**config)
     return config

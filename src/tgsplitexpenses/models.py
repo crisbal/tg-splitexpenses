@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 
+
 class ExpenseUser(BaseModel):
     id: str
     emoji: str
@@ -10,9 +11,11 @@ class ExpenseUser(BaseModel):
     def displayname(self):
         return f"{self.emoji} {self.name}"
 
+
 class ExpenseSplitType(BaseModel):
     name: str
-    split: dict[str, float] # user-id to percentange
+    split: dict[str, float]  # user-id to percentange
+
 
 class ExpenseCategory(BaseModel):
     name: str
@@ -22,6 +25,7 @@ class ExpenseCategory(BaseModel):
     @property
     def displayname(self):
         return f"{self.emoji} {self.name}"
+
 
 class Transaction(BaseModel):
     date: datetime

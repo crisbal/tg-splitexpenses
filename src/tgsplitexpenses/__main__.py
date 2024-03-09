@@ -4,7 +4,6 @@ import os
 
 from .tgbot import make_app as tg_make_app
 from .config import load_config
-from . import models
 from .gsheet import GSheet
 
 logging.basicConfig(level=logging.INFO)

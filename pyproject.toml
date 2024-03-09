@@ -22,7 +22,12 @@ dependencies = [
     "pydantic",
 ]
 
+[project.optional-dependencies]
+dev = ["ruff"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["tgsplitexpenses*"]
+
+[tool.ruff]
+line-length = 110
