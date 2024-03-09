@@ -237,13 +237,19 @@ async def _handler_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         transaction = models.Transaction(**context.user_data["TRANSACTION"])
 
         gsheet: GSheet = context.bot_data["gsheet"]
-        user_in_debt, amount_to_repay = gsheet.insert_transaction(transaction, app_config)
-
-        context.user_data["STATE"] = UserState.END
-        await update.message.reply_text(
-            f"✅ Saved in cloud.\n\nUser in debt: {user_in_debt}\nAmount to repay: {amount_to_repay}\n\nUse /add to add more",
-            reply_to_message_id=all_done.message_id,
-        )
+        try:
+            user_in_debt, amount_to_repay = gsheet.insert_transaction(transaction, app_config)
+            context.user_data["STATE"] = UserState.END
+            await update.message.reply_text(
+                f"✅ Saved to cloud.\n\nUser in debt: {user_in_debt}\nAmount to repay: {amount_to_repay}\n\nUse /add to add more",
+                reply_to_message_id=all_done.message_id,
+            )
+        except Exception as e:
+            logging.error(e)
+            await update.message.reply_text(
+                f"❌ Error saving to cloud.\n\n{str(e)}\n\nUse /add to try again.",
+                reply_to_message_id=all_done.message_id,
+            )
         return
 
 
