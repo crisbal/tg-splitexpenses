@@ -5,6 +5,10 @@ telegram_bot:
     "-987654321",
   ]
 
+openai:
+  model: "gpt-4o-mini"
+  api_key: "API_KEY"
+
 gsheet:
   service_account_file: "./service_account.json"
   file_id: "FILE_ID" # https://docs.google.com/spreadsheets/d/FILE_ID/edit#gid=0

@@ -23,7 +23,12 @@ class AppConfig(BaseModel):
         summary_worksheet_cell_user_in_debt: str
         summary_worksheet_cell_amount_to_repay: str
 
+    class _OpenAIConfig(BaseModel):
+        model: str
+        api_key: str
+
     telegram_bot: _TelegramBotConfig
+    openai: _OpenAIConfig
     expenses: _ExpensesConfig
     gsheet: _GSheetConfig
 

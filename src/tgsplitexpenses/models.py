@@ -34,3 +34,6 @@ class Transaction(BaseModel):
     category: ExpenseCategory
     paid_by: ExpenseUser
     split_type: ExpenseSplitType
+
+    def __str__(self):
+        return f"{self.date.strftime('%Y-%m-%d %H:%M')} - {self.title} - {self.total} - {self.paid_by.displayname} - {self.category.displayname} - {self.split_type.name}"

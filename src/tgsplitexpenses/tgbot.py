@@ -1,5 +1,6 @@
 from enum import StrEnum
 import logging
+import typing as t
 
 from datetime import datetime
 from functools import wraps
@@ -12,10 +13,12 @@ from telegram.ext import (
     ContextTypes,
 )
 from telegram.ext import filters
+from pydantic import create_model, Field
 
 from .config import AppConfig
 from . import models
 from .gsheet import GSheet
+from openai import OpenAI
 from .utils import is_float, make_keyboard, find_in_list, get_suggested_category
 
 
@@ -48,6 +51,7 @@ async def _handler_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     message_parts = [
         "Hello! 👋",
         "/add or /new to add a transaction",
+        "/aiadd to add a transaction with AI",
         "/status to show debt status",
         "/stats NOT IMPLEMENTED",
     ]
@@ -226,11 +230,117 @@ async def _handler_status(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     return
 
 
-def make_app(app_config: AppConfig, gsheet: GSheet):
+@restricted_by_chat_id
+async def _handler_aiadd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    context.user_data.clear()
+    context.user_data["STATE"] = UserState.START
+    user_text = update.message.text
+    assert user_text
+    user_text = user_text.replace("/aiadd", "").strip()
+
+    # The following will generate a dynamic Pydantic model based on app_config, so we can give it to OpenAI to parse the response
+    app_config: AppConfig = context.bot_data["app_config"]
+    category_enum = StrEnum("Category", {c.name: c.name for c in app_config.expenses.categories})
+    user_enum = StrEnum("User", {u.name: u.name for u in app_config.expenses.users})
+    split_type_enum = StrEnum("SplitType", {s.name: s.name for s in app_config.expenses.split_types})
+    transaction_model = create_model(
+        "Transaction",
+        total=(float, Field(..., description="Total amount of the transaction. Must be greater than 0")),
+        title=(
+            str,
+            Field(..., description="Title of the transaction, usually a description of what was bought"),
+        ),
+        category=(
+            category_enum,
+            Field(..., description="Category of the transaction. Guess based on the title"),
+        ),
+        paid_by=(user_enum, Field(..., description="User who paid the transaction")),
+        split_type=(
+            split_type_enum,
+            Field(
+                description="How the transaction should be split between the users",
+                default=app_config.expenses.split_types[0].name,
+            ),
+        ),
+    )
+    response_model = create_model(
+        "Response",
+        error=(
+            t.Optional[str],
+            Field(
+                ...,
+                description="Human readable message in case the transaction could not be completely parsed",
+            ),
+        ),
+        missing_fields=(
+            t.Optional[t.List[str]],
+            Field(
+                ..., description="Transaction fields that could not be found or guessed from the user input"
+            ),
+        ),
+        transaction=(
+            t.Optional[transaction_model],
+            Field(
+                ...,
+                description="Transaction as parsed from the user input. If all fields could not be parsed or guessed correctly, this will be null",
+            ),
+        ),
+    )
+    messages = [
+        {"role": "system", "content": "Extract the information about this transaction"},
+        {"role": "user", "content": f"Transaction was paid by: {update.message.from_user.full_name}"},
+        {"role": "user", "content": f"Transaction description: {user_text}"},
+    ]
+
+    openai: OpenAI = context.bot_data["openai"]
+    completion = openai.beta.chat.completions.parse(
+        model=app_config.openai.model,
+        messages=messages,
+        response_format=response_model,
+    )
+    response_model = completion.choices[0].message.parsed
+    if response_model.error:
+        await update.message.reply_text(
+            f"{response_model.error}\n{response_model.missing_fields}", quote=True
+        )
+        return
+
+    transaction = models.Transaction(
+        total=response_model.transaction.total,
+        title=response_model.transaction.title,
+        category=find_in_list(
+            response_model.transaction.category.value, app_config.expenses.categories, "name"
+        ),
+        paid_by=find_in_list(response_model.transaction.paid_by.value, app_config.expenses.users, "name"),
+        split_type=find_in_list(
+            response_model.transaction.split_type.value, app_config.expenses.split_types, "name"
+        ),
+        date=datetime.now(),
+    )
+    await update.message.reply_text(f"Transaction extracted by AI:\n\n{transaction}", quote=True)
+
+    gsheet: GSheet = context.bot_data["gsheet"]
+    try:
+        user_in_debt, amount_to_repay = gsheet.insert_transaction(transaction, app_config)
+        context.user_data["STATE"] = UserState.END
+        await update.message.reply_text(
+            f"✅ Saved to cloud.\n\nUser in debt: {user_in_debt}\nAmount to repay: {amount_to_repay}\n\nUse /add to add more",
+            quote=True,
+        )
+    except Exception as e:
+        logging.error(e)
+        await update.message.reply_text(
+            f"❌ Error saving to cloud.\n\n{str(e)}\n\nUse /add to try again.", quote=True
+        )
+    return
+
+
+def make_app(app_config: AppConfig, gsheet: GSheet, openai: OpenAI):
     async def _post_init(application):
         await application.bot.set_my_commands(
             [
                 ("add", "Add a new transaction (or start over)"),
+                ("aiadd", "Add a new transaction (AI)"),
                 ("status", "Debt status"),
                 ("start", "Starts the bot"),
                 ("help", "Get help"),
@@ -241,11 +351,13 @@ def make_app(app_config: AppConfig, gsheet: GSheet):
     app.bot_data = {
         "app_config": app_config,
         "gsheet": gsheet,
+        "openai": openai,
     }
     app.add_handler(CommandHandler("start", _handler_start))
     app.add_handler(CommandHandler("help", _handler_start))
     app.add_handler(CommandHandler("new", _handler_new))
     app.add_handler(CommandHandler("add", _handler_new))
+    app.add_handler(CommandHandler("aiadd", _handler_aiadd))
     app.add_handler(CommandHandler("status", _handler_status))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, _handler_text))
     return app

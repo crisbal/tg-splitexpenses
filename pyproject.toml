@@ -20,6 +20,7 @@ dependencies = [
     "python-telegram-bot",
     "ruamel.yaml",
     "pydantic",
+    "openai",
 ]
 
 [project.optional-dependencies]
