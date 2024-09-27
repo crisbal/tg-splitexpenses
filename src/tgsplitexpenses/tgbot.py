@@ -206,7 +206,7 @@ async def _handler_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             user_in_debt, amount_to_repay = gsheet.insert_transaction(transaction, app_config)
             context.user_data["STATE"] = UserState.END
             await update.message.reply_text(
-                f"✅ Saved to cloud.\n\nUser in debt: {user_in_debt}\nAmount to repay: {amount_to_repay}\n\nUse /add to add more",
+                f"✅ Saved to cloud.\n\nUser in debt: {user_in_debt}\nAmount to repay: {amount_to_repay}\n\nUse /add to add more\n\n🆕 Try /aiadd",
                 reply_to_message_id=all_done.message_id,
             )
         except Exception as e:
@@ -237,6 +237,9 @@ async def _handler_aiadd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     user_text = update.message.text
     assert user_text
     user_text = user_text.replace("/aiadd", "").strip()
+    if not len(user_text):
+        await update.message.reply_text("Please provide a description of the transaction", quote=True)
+        return
 
     # The following will generate a dynamic Pydantic model based on app_config, so we can give it to OpenAI to parse the response
     app_config: AppConfig = context.bot_data["app_config"]
@@ -324,7 +327,7 @@ async def _handler_aiadd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         user_in_debt, amount_to_repay = gsheet.insert_transaction(transaction, app_config)
         context.user_data["STATE"] = UserState.END
         await update.message.reply_text(
-            f"✅ Saved to cloud.\n\nUser in debt: {user_in_debt}\nAmount to repay: {amount_to_repay}\n\nUse /add to add more",
+            f"✅ Saved to cloud.\n\nUser in debt: {user_in_debt}\nAmount to repay: {amount_to_repay}\n\nUse /add to add more\n\n🆕 Try /aiadd",
             quote=True,
         )
     except Exception as e:
